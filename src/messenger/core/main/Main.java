@@ -6,7 +6,7 @@ import messenger.core.MessengerServer;
 public class Main {
     public static void main(String[] args) throws Exception {
         if (System.getProperty("server") != null 
-                && System.getProperty("server").equals("true")) {
+               && System.getProperty("server").equals("true")) {
             String userName = System.getProperty("username");
             System.out.println("Server!");
             MessengerServer messengerServer = new MessengerServer(userName);

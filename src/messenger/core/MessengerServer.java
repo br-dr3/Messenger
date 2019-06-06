@@ -30,7 +30,12 @@ public class MessengerServer {
                 BufferedReader bufferedReader = 
                         new BufferedReader(inputStreamReader);
                 String clientMessage = bufferedReader.readLine();
-                System.out.println("Message Received: " + clientMessage);
+                String clientUsername = 
+                        clientMessage.substring(0, clientMessage.indexOf(": "));
+                String userMessage = 
+                        clientMessage.substring(clientMessage.indexOf(": ")+2);
+                System.out.println("Message Received!");
+                System.out.println(clientUsername + ": \"" + userMessage + "\"");
             }
         }
         catch(Exception e) {
