@@ -2,7 +2,6 @@ package messenger.util;
 
 import java.util.PriorityQueue;
 import java.util.Comparator;
-import messenger.core.Message;
 import messenger.util.Triplet;
 
 public class Buffer<T> {

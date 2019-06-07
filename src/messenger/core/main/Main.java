@@ -1,7 +1,7 @@
 package messenger.core.main;
 
-import messenger.core.MessengerClient;
-import messenger.core.MessengerServer;
+import messenger.core.client.MessengerClient;
+import messenger.core.server.MessengerServer;
 
 public class Main {
     public static void main(String[] args) throws Exception {

@@ -1,4 +1,4 @@
-package messenger.core;
+package messenger.util;
 
 public class Message {
     private Long id;
@@ -36,7 +36,5 @@ public class Message {
 
     public void setReceiver(String receiver) {
         this.receiver = receiver;
-    }
-    
-    
+    } 
 }
