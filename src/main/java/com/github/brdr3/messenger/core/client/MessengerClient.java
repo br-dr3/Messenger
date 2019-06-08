@@ -2,15 +2,15 @@ package com.github.brdr3.messenger.core.client;
 
 import com.github.brdr3.messenger.core.util.Message;
 import com.github.brdr3.messenger.core.util.Message.MessageBuilder;
+import com.github.brdr3.messenger.core.util.User;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.Scanner;
 
 public class MessengerClient {
-    public String userName;
+    public User user;
     public String serverHost;
     public int serverPort;
     public int clientPort;
@@ -19,26 +19,50 @@ public class MessengerClient {
     private byte buffer[];
     private final Gson gson = new Gson();
     public final Scanner scanner = new Scanner(System.in);
+    private final Thread sender;
+    private final Thread receiver;
     
-    public MessengerClient(String username, int clientPort) {
-        this.userName = username;
+    public MessengerClient(String username, int clientPort) throws Exception {
+        this.user = new User(username, 
+                             InetAddress.getByName(serverHost),
+                             clientPort);
         this.serverHost = "localhost";
         this.serverPort = 15672;
         this.clientPort = clientPort;
         this.buffer = new byte[10000];
+        
+        this.receiver = new Thread() {
+            @Override
+            public void run() {
+                receive();
+            }
+        };
+        
+        this.sender = new Thread() {
+            @Override
+            public void run () {
+                send();
+            }
+        };
     }
     
     public void run () {
+        sender.start();
+        receiver.start();
+    }
+    
+    public void send() {
         try {
             InetAddress address = InetAddress.getByName(serverHost);
             String userMessage;
             String jsonMessage;
             Message message;
+            
             while(true) {
                 userMessage = null;
                 jsonMessage = null;
                 while (userMessage == null) {
-                    System.out.print("> ");
+                    System.out.print(user + " > ");
                     userMessage = scanner.nextLine();
                 }
                 
@@ -58,9 +82,9 @@ public class MessengerClient {
                     }
                 }
                 
-                message = new MessageBuilder().from(userName)
+                message = new MessageBuilder().from(user)
                                               .content(userMessage)
-                                              .to("")
+                                              .to(null)
                                               .build();
                 
                 jsonMessage = gson.toJson(message);
@@ -71,19 +95,29 @@ public class MessengerClient {
                                             address, 
                                             serverPort);
 
-                socket = new DatagramSocket();
+                socket = new DatagramSocket(clientPort);
                 socket.send(packet);
                 
                 System.out.println("Message sent: " + jsonMessage);
+                
+                socket.close();
+                
                 jsonMessage = null;
                 message = null;
                 userMessage = null;
-                
-                socket.close();
             }
         } 
         catch (Exception e) {
             e.printStackTrace();
         }
-    }   
+    }
+    
+    public void receive() {
+        try {
+            
+        } 
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

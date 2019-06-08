@@ -1,14 +1,12 @@
 package com.github.brdr3.messenger.core.util;
 
-public class Triplet<T, T0, T1> {
+public class Tuple<T, T0> {
     T x;
     T0 y;
-    T1 z;
     
-    public Triplet(T x, T0 y, T1 z) {
+    public Tuple(T x, T0 y) {
         this.x = x;
         this.y = y;
-        this.z = z;
     }
 
     public T getX() {
@@ -29,8 +27,6 @@ public class Triplet<T, T0, T1> {
     
     @Override
     public String toString() {
-        return "(" + x.toString() + ", " 
-                   + y.toString() + ", "
-                   + z.toString() + ")";
+        return "(" + x.toString() + ", " + y.toString() + ")";
     }
 }

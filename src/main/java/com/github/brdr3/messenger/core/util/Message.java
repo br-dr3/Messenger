@@ -3,22 +3,22 @@ package com.github.brdr3.messenger.core.util;
 public class Message {
     private Long id;
     private String content;
-    private String to;
-    private String from;
+    private User to;
+    private User from;
     
-    public String getTo() {
+    public User getTo() {
         return to;
     }
 
-    public void setTo(String to) {
+    public void setTo(User to) {
         this.to = to;
     }
 
-    public String getFrom() {
+    public User getFrom() {
         return from;
     }
 
-    public void setFrom(String from) {
+    public void setFrom(User from) {
         this.from = from;
     }
     
@@ -51,12 +51,12 @@ public class Message {
             return this;
         }
         
-        public MessageBuilder to(String to) {
+        public MessageBuilder to(User to) {
             m.setTo(to);
             return this;
         }
         
-        public MessageBuilder from(String from) {
+        public MessageBuilder from(User from) {
             m.setFrom(from);
             return this;
         }
