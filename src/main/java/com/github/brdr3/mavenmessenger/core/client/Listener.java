@@ -1,4 +1,4 @@
-package messenger.core.client;
+package com.github.brdr3.mavenmessenger.core.client;
 
 public class Listener  implements Runnable {
 

@@ -1,4 +1,4 @@
-package messenger.core.client;
+package com.github.brdr3.mavenmessenger.core.client;
 
 import java.io.BufferedWriter;
 import java.io.OutputStream;
@@ -11,16 +11,16 @@ import java.util.Scanner;
 public class MessengerClient {
     public String userName;
     public String serverHost;
-    public int serverPort;
+    public int clientPort;
     public DatagramSocket socket;
     public DatagramPacket packet;
     private byte buffer[];
     public final Scanner scanner  = new Scanner(System.in);
     
-    public MessengerClient(String username) {
+    public MessengerClient(String username, int clientPort) {
         this.userName = username;
         this.serverHost = "localhost";
-        this.serverPort = 15672;
+        this.clientPort = clientPort;
         this.buffer = new byte[10000];
     }
     
@@ -57,7 +57,7 @@ public class MessengerClient {
                 packet = new DatagramPacket(buffer, 
                             buffer.length, 
                             address, 
-                            serverPort);
+                            clientPort);
 
                 socket = new DatagramSocket();
                 socket.send(packet);
@@ -69,9 +69,5 @@ public class MessengerClient {
         catch (Exception e) {
             e.printStackTrace();
         }
-    }
-    
-    public void example() {
-        new Thread().start();
-    }
+    }   
 }

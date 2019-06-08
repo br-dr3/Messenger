@@ -1,7 +1,7 @@
-package messenger.core.main;
+package com.github.brdr3.mavenmessenger.core.main;
 
-import messenger.core.client.MessengerClient;
-import messenger.core.server.MessengerServer;
+import com.github.brdr3.mavenmessenger.core.client.MessengerClient;
+import com.github.brdr3.mavenmessenger.core.server.MessengerServer;
 
 public class Main {
     public static void main(String[] args) throws Exception {

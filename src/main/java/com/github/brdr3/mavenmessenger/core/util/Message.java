@@ -1,4 +1,4 @@
-package messenger.util;
+package com.github.brdr3.mavenmessenger.core.util;
 
 public class Message {
     private Long id;

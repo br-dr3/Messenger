@@ -1,4 +1,4 @@
-package messenger.core.server;
+package com.github.brdr3.mavenmessenger.core.server;
 
 import java.io.BufferedReader;
 import java.io.InputStream;

@@ -1,8 +1,8 @@
-package messenger.util;
+package com.github.brdr3.mavenmessenger.core.util;
 
 import java.util.PriorityQueue;
 import java.util.Comparator;
-import messenger.util.Triplet;
+import com.github.brdr3.mavenmessenger.core.util.Triplet;
 
 public class Buffer<T> {
     private PriorityQueue<Triplet<Long, Message, String>> storage;
