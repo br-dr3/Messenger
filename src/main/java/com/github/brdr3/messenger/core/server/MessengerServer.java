@@ -13,8 +13,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class MessengerServer {
+
     private final int port = 15672;
     private final Queue<Message> messageQueue;
     private Map<Long, Message> messageHistory;
@@ -23,32 +26,39 @@ public class MessengerServer {
     private final Thread sender;
     private final User user;
     private final Map<String, Tuple<User, Boolean>> userConnection;
-    
-    public MessengerServer(String username) throws UnknownHostException {
-        this.user = 
-                new User("server", InetAddress.getByName("localhost"), port);
+    private final boolean debug;
+
+    public MessengerServer(String username, boolean b) throws UnknownHostException {
+        this.user
+                = new User("server", InetAddress.getByName("localhost"), port);
         this.messageQueue = new ConcurrentLinkedQueue<>();
         this.messageHistory = new HashMap<>();
-        
-        this.receiver = new Thread(){
+
+        this.receiver = new Thread() {
             @Override
             public void run() {
                 receive();
             }
         };
-        
+
         this.sender = new Thread() {
             @Override
-            public void run () {
+            public void run() {
                 send();
             }
         };
-        
+
+        debug = b;
+
         userConnection = new HashMap<>();
-        userConnection.put(user.getUsername(), 
-                              new Tuple<>(user, true));
+        userConnection.put(user.getUsername(),
+                new Tuple<>(user, true));
     }
-    
+
+    public MessengerServer(String username) throws UnknownHostException {
+        this(username, false);
+    }
+
     public void receive() {
         DatagramSocket socket;
         DatagramPacket dgPacket;
@@ -56,104 +66,130 @@ public class MessengerServer {
         User senderMessageUser;
         Boolean senderEnable;
         MessageBuilder mb = new MessageBuilder();
-        
+
         String jsonMessage;
         Message message;
         Message answer;
         Tuple<User, Boolean> mapEntry;
-        
+
         try {
             socket = new DatagramSocket(user.getPort());
-            while(true) {
+            while (true) {
                 answer = null;
-                dgPacket = new DatagramPacket(buffer, buffer.length, 
-                                              user.getAddress(), 
-                                              user.getPort());
+                dgPacket = new DatagramPacket(buffer, buffer.length,
+                        user.getAddress(),
+                        user.getPort());
                 socket.receive(dgPacket);
-                 
+
                 jsonMessage = new String(dgPacket.getData()).trim();
                 message = gson.fromJson(jsonMessage, Message.class);
-                
-                System.out.println("Message Received!");
-                System.out.println("Message: " + message);
-                senderMessageUser = message.getFrom();
-                senderEnable = true;
-                
-                mapEntry = new Tuple<>(senderMessageUser, senderEnable);
-                putIfNotExists(mapEntry);
-                
-                if(message.getContent().equals("/test")) {
+
+                syncronizedPrint("Message Received!");
+                debugPrint("Message: " + message);
+
+                if (message.getContent().equals("/test")) {
+                    debugPrint("Test Message!");
                     answer = mb.to(message.getFrom())
-                               .from(user)
-                               .content("test")
-                               .build();
+                            .from(user)
+                            .content("Test successfull!")
+                            .build();
+                    userConnection.put(message.getFrom().getUsername(), new Tuple<>(message.getFrom(), true));
+                    debugPrint("userConnection: " + userConnection.toString());
+                } else if (message.getContent().equals("/exit")) {
+                    debugPrint("User " + message.getTo() + " had logout!");
+                    userConnection.put(message.getFrom().getUsername(), new Tuple<>(message.getFrom(), false));
+                    debugPrint("userConnection: " + userConnection.toString());
                 } else {
                     answer = null;
+                    userConnection.put(message.getFrom().getUsername(), new Tuple<>(message.getFrom(), true));
+                    debugPrint("userConnection: " + userConnection.toString());
                 }
-                
-                if (answer != null)
-                   messageQueue.add(answer);
+
+                if (answer != null) {
+                    messageQueue.add(answer);
+                }
                 cleanBuffer(buffer);
             }
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    
+
     public void send() {
         byte buffer[] = new byte[10000];
         Message m;
         String jsonMessage;
         DatagramPacket packet;
         DatagramSocket socket;
-        
+
         try {
-            while(true) {
-                if(!messageQueue.isEmpty()) {
+            while (true) {
+                if (!messageQueue.isEmpty()) {
                     m = messageQueue.poll();
-                    
+
                     jsonMessage = gson.toJson(m);
                     buffer = jsonMessage.getBytes();
                     packet = new DatagramPacket(buffer,
-                                                buffer.length,
-                                                m.getTo().getAddress(),
-                                                m.getTo().getPort());
+                            buffer.length,
+                            m.getTo().getAddress(),
+                            m.getTo().getPort());
                     socket = new DatagramSocket();
                     socket.send(packet);
                     socket.close();
-                    
-                    System.out.println("Message sended to client: " + m);
+
+                    syncronizedPrint("Message sended to client! ");
+                    debugPrint(m.toString());
                     messageHistory.put(m.getId(), m);
-                    
+
                     cleanBuffer(buffer);
                     m = null;
                     jsonMessage = null;
                     packet = null;
                 }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
-    
-    public void run () {
+
+    public void run() {
         receiver.start();
         sender.start();
     }
-    
+
     private void cleanBuffer(byte buf[]) {
-        for(int i = 0; i < buf.length; i++) {
+        for (int i = 0; i < buf.length; i++) {
             buf[i] = 0;
         }
     }
-    
-    private void putIfNotExists(Tuple<User, Boolean> tuple) {
-        if(userConnection.containsKey(tuple.getX().getUsername())) {
-            userConnection.put(tuple.getX().getUsername(), tuple);
-            System.out.println("Added to map: (" + tuple.getX().getUsername() +
-                               ", " + tuple + ")");
+
+    private void debugPrint(String s) {
+        try {
+            if (debug) {
+                syncronizedPrint("[DEBUG] - " + s, true, false);
+            }
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
         }
+    }
+
+    private void syncronizedPrint(String s, boolean newLine, boolean cleanCurrentLine)
+            throws InterruptedException {
+        synchronized (System.out) {
+            if (cleanCurrentLine) {
+                System.out.print("\r                         "
+                        + "                         \r");
+            }
+
+            System.out.print(s);
+
+            if (newLine) {
+                System.out.println();
+            }
+        }
+    }
+
+    private void syncronizedPrint(String s) throws InterruptedException {
+        syncronizedPrint(s, true, false);
     }
 }

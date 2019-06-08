@@ -19,6 +19,7 @@ public class MessengerClient {
     public final Scanner scanner = new Scanner(System.in);
     private final Thread sender;
     private final Thread receiver;
+    public boolean debug = false;
     
     public MessengerClient(String username, 
                            int port, 
@@ -60,7 +61,6 @@ public class MessengerClient {
         String userMessage;
         String content="";
         MessageBuilder mb = new MessageBuilder();
-        Message message;
         User to = this.server;
         
         try {
@@ -101,8 +101,7 @@ public class MessengerClient {
                 
                 if(content.equals("/exit")) {
                     syncronizedPrint("ByeBye!");
-                    receiver.currentThread().interrupt();
-                    sender.currentThread().interrupt();
+                    System.exit(0);
                     break;
                 }
             }
@@ -131,7 +130,10 @@ public class MessengerClient {
                 jsonMessage = new String(dgPacket.getData()).trim();
                 message = gson.fromJson(jsonMessage, Message.class);
                 
-                syncronizedPrint("Message Received: " + message);
+                if(debug) {
+                    debugPrint("Message Received: " + message);
+                }
+                
                 printTerminalIdentifier(message.getFrom());
                 syncronizedPrint(message.getContent(), true, false);
                 printTerminalIdentifier(user);
@@ -165,7 +167,10 @@ public class MessengerClient {
         socket = new DatagramSocket();
         socket.send(packet);
         
-        syncronizedPrint("Message sent: " + jsonMessage);
+        if(debug) {
+            debugPrint("Message sent: " + jsonMessage);
+        }
+        
         socket.close();
     }
     
@@ -186,5 +191,15 @@ public class MessengerClient {
     
     private void printTerminalIdentifier(User u) throws Exception {
         syncronizedPrint(u + " > ", false, false);
+    }
+    
+        private void debugPrint(String s) {
+        try {
+            if(debug) {
+                syncronizedPrint("[DEBUG] - " + s, true, false);
+            }
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
     }
 }

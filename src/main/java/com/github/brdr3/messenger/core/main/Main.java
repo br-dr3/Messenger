@@ -12,7 +12,8 @@ public class Main {
                 && System.getProperty("server").equals("true")) {
             String userName = System.getProperty("username");
             System.out.println("Server!");
-            MessengerServer messengerServer = new MessengerServer(userName);
+            MessengerServer messengerServer = 
+                    new MessengerServer(userName, Boolean.parseBoolean(System.getProperty("debug")));
             messengerServer.run();
         } else {
             if (System.getProperty("username").isEmpty()) {
@@ -25,6 +26,7 @@ public class Main {
                                 System.getProperty("serverHostname"),
                                 Integer.parseInt(System.getProperty("serverPort")));
                 messengerClient.run();
+                messengerClient.debug = Boolean.parseBoolean(System.getProperty("debug"));
             }
         }
     }
