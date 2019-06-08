@@ -17,6 +17,7 @@ public class MessengerClient {
     public DatagramSocket socket;
     public DatagramPacket packet;
     private byte buffer[];
+    private final Gson gson = new Gson();
     public final Scanner scanner = new Scanner(System.in);
     
     public MessengerClient(String username, int clientPort) {
@@ -30,8 +31,12 @@ public class MessengerClient {
     public void run () {
         try {
             InetAddress address = InetAddress.getByName(serverHost);
-            String userMessage = null;
+            String userMessage;
+            String jsonMessage;
+            Message message;
             while(true) {
+                userMessage = null;
+                jsonMessage = null;
                 while (userMessage == null) {
                     System.out.print("> ");
                     userMessage = scanner.nextLine();
@@ -53,13 +58,12 @@ public class MessengerClient {
                     }
                 }
                 
-                Message message = new MessageBuilder()
-                                         .from(userName)
-                                         .content(userMessage)
-                                         .to("")
-                                         .build();
-                Gson gson = new Gson();
-                String jsonMessage = gson.toJson(message);
+                message = new MessageBuilder().from(userName)
+                                              .content(userMessage)
+                                              .to("")
+                                              .build();
+                
+                jsonMessage = gson.toJson(message);
                 
                 buffer = jsonMessage.getBytes();
                 packet = new DatagramPacket(buffer, 
