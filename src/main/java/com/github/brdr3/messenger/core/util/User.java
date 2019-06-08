@@ -5,11 +5,23 @@ import java.net.InetAddress;
 public class User {
     private String username;
     private InetAddress address;
-    private int port;
-
-    public User(String username, InetAddress address, int port) {
+    private Integer port;
+    
+    public User(String username, InetAddress address, Integer sendPort) {
         this.username = username;
         this.address = address;
+        this.port = sendPort;
+    }
+    
+    public User(String username) {
+        this(username, null, null);
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
         this.port = port;
     }
 
@@ -29,14 +41,6 @@ public class User {
         this.address = address;
     }
 
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-    
     @Override
     public String toString() {
         return username + "@" + address.getHostName() + ":" + port;

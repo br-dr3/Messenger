@@ -15,23 +15,21 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class MessengerServer {
-    private DatagramSocket socket;
-    private Queue<Message> messageQueue;
-    private DatagramPacket dgPacket;
-    private InetAddress address;
+    private final int port = 15672;
+    private final Queue<Message> messageQueue;
+    private Map<Long, Message> messageHistory;
     private final Gson gson = new Gson();
     private final Thread receiver;
     private final Thread sender;
-    private User user;
-    
-    private Map<String,  
-                Tuple<User, Boolean>> userPortHashTable;
+    private final User user;
+    private final Map<String, Tuple<User, Boolean>> userConnection;
     
     public MessengerServer(String username) throws UnknownHostException {
-        this.user = new User("server", 
-                             InetAddress.getByName("localhost"), 
-                             15672);
+        this.user = 
+                new User("server", InetAddress.getByName("localhost"), port);
         this.messageQueue = new ConcurrentLinkedQueue<>();
+        this.messageHistory = new HashMap<>();
+        
         this.receiver = new Thread(){
             @Override
             public void run() {
@@ -46,48 +44,55 @@ public class MessengerServer {
             }
         };
         
-        this.userPortHashTable = new HashMap<>();
+        userConnection = new HashMap<>();
+        userConnection.put(user.getUsername(), 
+                              new Tuple<>(user, true));
     }
     
     public void receive() {
+        DatagramSocket socket;
+        DatagramPacket dgPacket;
         byte buffer[] = new byte[10000];
         User senderMessageUser;
         Boolean senderEnable;
+        MessageBuilder mb = new MessageBuilder();
+        
+        String jsonMessage;
+        Message message;
+        Message answer;
+        Tuple<User, Boolean> mapEntry;
         
         try {
             socket = new DatagramSocket(user.getPort());
             while(true) {
-                dgPacket = new DatagramPacket(buffer, buffer.length);
-                socket.receive(dgPacket);
-                address = dgPacket.getAddress();
+                answer = null;
                 dgPacket = new DatagramPacket(buffer, buffer.length, 
-                                                    address, user.getPort());
+                                              user.getAddress(), 
+                                              user.getPort());
+                socket.receive(dgPacket);
                  
-                String jsonMessage = new String(dgPacket.getData()).trim();
-                Message message = gson.fromJson(jsonMessage, Message.class);
+                jsonMessage = new String(dgPacket.getData()).trim();
+                message = gson.fromJson(jsonMessage, Message.class);
                 
                 System.out.println("Message Received!");
-                System.out.println("Content -> \"" + message.getContent() 
-                                                   + "\"");
-                
+                System.out.println("Message: " + message);
                 senderMessageUser = message.getFrom();
                 senderEnable = true;
-                System.out.println("User -> " + message.getFrom());
-                Tuple<User, Boolean> mapEntry = 
-                        new Tuple<>(senderMessageUser, senderEnable);
                 
-                if(userPortHashTable.containsKey(message.getFrom()
-                                                        .getUsername())) {
-                    userPortHashTable.put(senderMessageUser.getUsername(), 
-                                          mapEntry);
+                mapEntry = new Tuple<>(senderMessageUser, senderEnable);
+                putIfNotExists(mapEntry);
+                
+                if(message.getContent().equals("/test")) {
+                    answer = mb.to(message.getFrom())
+                               .from(user)
+                               .content("test")
+                               .build();
+                } else {
+                    answer = null;
                 }
                 
-//                Message answer = new MessageBuilder()
-//                                           .to(senderMessageUser)
-//                                           .from(user)
-//                                           .content("test")
-//                                           .build();
-//                messageQueue.add(answer);
+                if (answer != null)
+                   messageQueue.add(answer);
                 cleanBuffer(buffer);
             }
         }
@@ -107,16 +112,24 @@ public class MessengerServer {
             while(true) {
                 if(!messageQueue.isEmpty()) {
                     m = messageQueue.poll();
+                    
                     jsonMessage = gson.toJson(m);
                     buffer = jsonMessage.getBytes();
                     packet = new DatagramPacket(buffer,
                                                 buffer.length,
-                                                m.getFrom().getAddress(),
-                                                m.getFrom().getPort());
-                    socket = new DatagramSocket(user.getPort());
+                                                m.getTo().getAddress(),
+                                                m.getTo().getPort());
+                    socket = new DatagramSocket();
                     socket.send(packet);
                     socket.close();
+                    
+                    System.out.println("Message sended to client: " + m);
+                    messageHistory.put(m.getId(), m);
+                    
                     cleanBuffer(buffer);
+                    m = null;
+                    jsonMessage = null;
+                    packet = null;
                 }
             }
         }
@@ -130,9 +143,17 @@ public class MessengerServer {
         sender.start();
     }
     
-    public void cleanBuffer(byte buf[]) {
+    private void cleanBuffer(byte buf[]) {
         for(int i = 0; i < buf.length; i++) {
             buf[i] = 0;
+        }
+    }
+    
+    private void putIfNotExists(Tuple<User, Boolean> tuple) {
+        if(userConnection.containsKey(tuple.getX().getUsername())) {
+            userConnection.put(tuple.getX().getUsername(), tuple);
+            System.out.println("Added to map: (" + tuple.getX().getUsername() +
+                               ", " + tuple + ")");
         }
     }
 }

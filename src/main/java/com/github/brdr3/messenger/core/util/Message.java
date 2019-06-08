@@ -1,5 +1,7 @@
 package com.github.brdr3.messenger.core.util;
 
+import com.google.gson.Gson;
+
 public class Message {
     private Long id;
     private String content;
@@ -36,6 +38,12 @@ public class Message {
 
     public void setId(Long id) {
         this.id = id;
+    }
+    
+    @Override
+    public String toString() {
+        Gson gson = new Gson();
+        return gson.toJson(this);
     }
     
     public static class MessageBuilder {
