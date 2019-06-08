@@ -1,28 +1,30 @@
-package com.github.brdr3.mavenmessenger.core.server;
+package com.github.brdr3.messenger.core.server;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import com.github.brdr3.messenger.core.util.Message;
+import com.google.gson.Gson;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MessengerServer {
-    private String userName;
-    public DatagramSocket socket;
-    public String serverIP;
-    public int serverPort;
+    private DatagramSocket socket;
+    private String serverIP;
+    private int serverPort;
     private byte buffer[];            
     private DatagramPacket datagramPacket;
     private InetAddress address;
+    private final Gson gson = new Gson();
+    
+    private Map<String, Integer> userPortHashTable;
     
     public MessengerServer(String username) {
-        this.userName = username;
         this.serverIP = "localhost";
         this.serverPort = 15672;
         this.buffer = new byte[10000];
+        
+        userPortHashTable = new HashMap<>();
     }
     
     public void run () {
@@ -41,27 +43,16 @@ public class MessengerServer {
                                                     address, 
                                                     serverPort);
                 
-                String clientMessage = new String(datagramPacket.getData(), 
-                                                  0, 
-                                                  datagramPacket.getLength());
-                String clientUsername = 
-                        clientMessage.substring(0, clientMessage.indexOf(": "));
-                String userMessage = 
-                        clientMessage.substring(clientMessage.indexOf(": ")+2,
-                                                clientMessage.indexOf("\0"));
+                String jsonMessage = 
+                        new String(datagramPacket.getData()).trim();
+                Message message = gson.fromJson(jsonMessage, Message.class);
                 System.out.println("Message Received!");
-                System.out.println(clientUsername + ": \"" 
-                                 + userMessage + "\"");
+                System.out.println(message.getContent());
                 
                 for(int i = 0; i < buffer.length; i++) {
                     buffer[i] = 0;
                 }
-                
-                if(userMessage.equals("alo"))
-                    break;
-
             }
-            socket.close();
         }
         catch(Exception e) {
             e.printStackTrace();

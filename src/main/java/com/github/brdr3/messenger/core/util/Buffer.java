@@ -1,8 +1,8 @@
-package com.github.brdr3.mavenmessenger.core.util;
+package com.github.brdr3.messenger.core.util;
 
 import java.util.PriorityQueue;
 import java.util.Comparator;
-import com.github.brdr3.mavenmessenger.core.util.Triplet;
+import com.github.brdr3.messenger.core.util.Triplet;
 
 public class Buffer<T> {
     private PriorityQueue<Triplet<Long, Message, String>> storage;
@@ -14,7 +14,7 @@ public class Buffer<T> {
     }
     
     public void addMessage(Message m) {
-        addTriplet(new Triplet<>(m.getId(), m.getSender(), m.getReceiver()));
+        addTriplet(new Triplet<>(m.getId(), m.getFrom(), m.getTo()));
     }
     
     public void addTriplet(Triplet triplet) {

@@ -1,7 +1,7 @@
-package com.github.brdr3.mavenmessenger.core.main;
+package com.github.brdr3.messenger.core.main;
 
-import com.github.brdr3.mavenmessenger.core.client.MessengerClient;
-import com.github.brdr3.mavenmessenger.core.server.MessengerServer;
+import com.github.brdr3.messenger.core.client.MessengerClient;
+import com.github.brdr3.messenger.core.server.MessengerServer;
 
 public class Main {
     public static void main(String[] args) throws Exception {
@@ -17,7 +17,8 @@ public class Main {
             } else {
                 System.out.println("Client!");
                 MessengerClient messengerClient = 
-                        new MessengerClient(System.getProperty("username"));
+                        new MessengerClient(System.getProperty("username"),
+                                            Integer.parseInt(System.getProperty("clientPort")));
                 messengerClient.run();
             }
         }

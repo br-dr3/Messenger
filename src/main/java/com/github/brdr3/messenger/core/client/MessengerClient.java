@@ -1,8 +1,9 @@
-package com.github.brdr3.mavenmessenger.core.client;
+package com.github.brdr3.messenger.core.client;
 
-import java.io.BufferedWriter;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import com.github.brdr3.messenger.core.util.Message;
+import com.github.brdr3.messenger.core.util.Message.MessageBuilder;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -11,15 +12,17 @@ import java.util.Scanner;
 public class MessengerClient {
     public String userName;
     public String serverHost;
+    public int serverPort;
     public int clientPort;
     public DatagramSocket socket;
     public DatagramPacket packet;
     private byte buffer[];
-    public final Scanner scanner  = new Scanner(System.in);
+    public final Scanner scanner = new Scanner(System.in);
     
     public MessengerClient(String username, int clientPort) {
         this.userName = username;
         this.serverHost = "localhost";
+        this.serverPort = 15672;
         this.clientPort = clientPort;
         this.buffer = new byte[10000];
     }
@@ -49,20 +52,29 @@ public class MessengerClient {
                         System.out.println("Sorry, couldn't get the command.");
                     }
                 }
-                                
-                String message = userName + ": " + userMessage;
                 
-                buffer = message.getBytes();
-                userMessage = null;
+                Message message = new MessageBuilder()
+                                         .from(userName)
+                                         .content(userMessage)
+                                         .to("")
+                                         .build();
+                Gson gson = new Gson();
+                String jsonMessage = gson.toJson(message);
+                
+                buffer = jsonMessage.getBytes();
                 packet = new DatagramPacket(buffer, 
-                            buffer.length, 
-                            address, 
-                            clientPort);
+                                            buffer.length, 
+                                            address, 
+                                            serverPort);
 
                 socket = new DatagramSocket();
                 socket.send(packet);
                 
-                System.out.println("Message sent: " + message);
+                System.out.println("Message sent: " + jsonMessage);
+                jsonMessage = null;
+                message = null;
+                userMessage = null;
+                
                 socket.close();
             }
         } 
