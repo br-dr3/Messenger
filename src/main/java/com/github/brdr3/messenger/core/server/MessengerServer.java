@@ -28,7 +28,8 @@ public class MessengerServer {
     private final Map<String, Tuple<User, Boolean>> userConnection;
     private final boolean debug;
 
-    public MessengerServer(String username, boolean b) throws UnknownHostException {
+    public MessengerServer(String username, boolean b) 
+            throws UnknownHostException {
         this.user
                 = new User("server", InetAddress.getByName("localhost"), port);
         this.messageQueue = new ConcurrentLinkedQueue<>();
@@ -93,19 +94,50 @@ public class MessengerServer {
                             .from(user)
                             .content("Test successfull!")
                             .build();
-                    userConnection.put(message.getFrom().getUsername(), new Tuple<>(message.getFrom(), true));
+                    userConnection.put(message.getFrom().getUsername(), 
+                                       new Tuple<>(message.getFrom(), true));
                     debugPrint("userConnection: " + userConnection.toString());
                 } else if (message.getContent().equals("/exit")) {
-                    debugPrint("User " + message.getTo() + " had logout!");
-                    userConnection.put(message.getFrom().getUsername(), new Tuple<>(message.getFrom(), false));
+                    debugPrint("User " + message.getFrom() + " had logout!");
+                    userConnection.put(message.getFrom().getUsername(), 
+                                       new Tuple<>(message.getFrom(), false));
                     debugPrint("userConnection: " + userConnection.toString());
+                } else if (message.getContent()
+                                  .split(" ")
+                                  .length == 2
+                           && message.getContent()
+                                     .split(" ")[0]
+                                     .equals("/username")) {
+                    userConnection.put(message.getFrom().getUsername(), 
+                                       new Tuple<>(message.getFrom(), true));
+                    String newUsername = message.getContent().split(" ")[1];
+                    Tuple<User, Boolean> tupleNewUser = 
+                            userConnection.get(newUsername);
+                    if (tupleNewUser == null) {
+                        answer = mb.to(message.getFrom())
+                               .from(user)
+                               .content("Could not find requested user.. "
+                                       + "Is it on?")
+                               .build();
+                        debugPrint("Could not find requested user");
+                    } else {
+                        User newUser = tupleNewUser.getX();
+                        String jsonAnswer = gson.toJson(newUser);
+                        answer = mb.to(message.getFrom())
+                                   .from(user)
+                                   .content("requestedUser = " + jsonAnswer)
+                                   .build();
+                        debugPrint("Sended user to client " + message.getFrom());
+                    }
                 } else {
-                    answer = null;
-                    userConnection.put(message.getFrom().getUsername(), new Tuple<>(message.getFrom(), true));
+                    answer = message;
+                    userConnection.put(message.getFrom().getUsername(), 
+                            new Tuple<>(message.getFrom(), true));
                     debugPrint("userConnection: " + userConnection.toString());
                 }
 
-                if (answer != null) {
+                if (answer != null 
+                    && !answer.getTo().getUsername().equals("server")) {
                     messageQueue.add(answer);
                 }
                 cleanBuffer(buffer);
@@ -173,7 +205,9 @@ public class MessengerServer {
         }
     }
 
-    private void syncronizedPrint(String s, boolean newLine, boolean cleanCurrentLine)
+    private void syncronizedPrint(String s, 
+                                  boolean newLine, 
+                                  boolean cleanCurrentLine)
             throws InterruptedException {
         synchronized (System.out) {
             if (cleanCurrentLine) {

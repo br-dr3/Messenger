@@ -15,6 +15,7 @@ import java.util.Scanner;
 public class MessengerClient {
     public User user;
     public User server;
+    public User to;
     private final Gson gson = new Gson();
     public final Scanner scanner = new Scanner(System.in);
     private final Thread sender;
@@ -49,6 +50,8 @@ public class MessengerClient {
                 send();
             }
         };
+        
+        to = this.server;
     }
     
     public void run () {
@@ -61,7 +64,6 @@ public class MessengerClient {
         String userMessage;
         String content="";
         MessageBuilder mb = new MessageBuilder();
-        User to = this.server;
         
         try {
             byte buffer[] = new byte [10000];
@@ -72,22 +74,32 @@ public class MessengerClient {
                     printTerminalIdentifier(user);
                     userMessage = scanner.nextLine();
                 }
+
+                debugPrint("userMessage = " + userMessage);
                 
                 if (userMessage.startsWith("/")) {
-                    if(userMessage.equals("/exit")) {
+                    if(userMessage.trim().equals("/exit")) {
                         to = server;
-                        content = userMessage;
-                    } else if (userMessage.equals("/help")) {
+                        content = userMessage.trim();
+                    } else if (userMessage.trim().equals("/help")) {
                         System.out.println("Messenger Help: ");
                         System.out.println("\t/help -> Shows this text.");
                         System.out.println("\t/exit -> Exit messenger");
-                        System.out.println("\t/username <username> -> Change receiver (default: server)");
-                        System.out.println("\t/test -> Send test communication");
+                        System.out.println("\t/username <username> ->"
+                                + " Change receiver (default: server)");
+                        System.out.println("\t/test -> Send test "
+                                + "communication");
                         continue;
                     } else if(userMessage.split(" ").length == 2
-                              && userMessage.split(" ")[0].equals("/username")) {
-                        to = new User(userMessage.split(" ")[1]);
-                        continue;
+                              && userMessage.split(" ")[0]
+                                            .equals("/username")) {
+                        to = server;
+                        if (userMessage.split(" ")[1].equals("server")) {
+                            debugPrint("User is conversating with server");
+                            continue;
+                        } else {
+                            content = userMessage;
+                        }
                     } else if(userMessage.equals("/test")) {
                         to = server;
                         content = userMessage;
@@ -95,6 +107,9 @@ public class MessengerClient {
                         System.out.println("Sorry, couldn't get the command.");
                         continue;
                     }
+                    userMessage = null;
+                } else {
+                    content = userMessage;
                 }
                 
                 sendMessage(mb.from(user).to(to).content(content).build());
@@ -134,6 +149,18 @@ public class MessengerClient {
                     debugPrint("Message Received: " + message);
                 }
                 
+                if(message.getFrom().getUsername().equals("server")
+                   && message.getContent().startsWith("requestedUser = ")) {
+                    debugPrint("Server answer: " +
+                               message.getContent().substring("requestedUser = "
+                                                                    .length()));
+                    to = gson.fromJson(message.getContent()
+                                              .substring("requestedUser = "
+                                                                     .length()), 
+                                       User.class);
+                    debugPrint("Changed conversation: new User {" + to + "}");
+                }
+                
                 printTerminalIdentifier(message.getFrom());
                 syncronizedPrint(message.getContent(), true, false);
                 printTerminalIdentifier(user);
@@ -161,8 +188,8 @@ public class MessengerClient {
         buffer = jsonMessage.getBytes();
         packet = new DatagramPacket(buffer, 
                                     buffer.length, 
-                                    m.getTo().getAddress(), 
-                                    m.getTo().getPort());
+                                    server.getAddress(),
+                                    server.getPort());
 
         socket = new DatagramSocket();
         socket.send(packet);
@@ -171,14 +198,18 @@ public class MessengerClient {
             debugPrint("Message sent: " + jsonMessage);
         }
         
+        cleanBuffer(buffer);
         socket.close();
     }
     
-    private void syncronizedPrint(String s, boolean newLine, boolean cleanCurrentLine) 
+    private void syncronizedPrint(String s, 
+                                  boolean newLine, 
+                                  boolean cleanCurrentLine) 
              throws InterruptedException {
         synchronized(System.out) {
             if(cleanCurrentLine)
-                System.out.print("\r                                                 \r");
+                System.out.print("\r                          "
+                        + "                       \r");
                 System.out.print(s);
             if(newLine)
                 System.out.println();
@@ -190,13 +221,19 @@ public class MessengerClient {
     }
     
     private void printTerminalIdentifier(User u) throws Exception {
-        syncronizedPrint(u + " > ", false, false);
+        syncronizedPrint(u.toString(), false, false);
+        
+        if (!to.getUsername().equals("server")) {
+            syncronizedPrint(" -> " + to + " > ", false, false);
+        } else {
+            syncronizedPrint(" > ", false, false);
+        }
     }
     
-        private void debugPrint(String s) {
+    private void debugPrint(String s) {
         try {
             if(debug) {
-                syncronizedPrint("[DEBUG] - " + s, true, false);
+                syncronizedPrint("[DEBUG] - " + s, true, true);
             }
         } catch (InterruptedException ex) {
             ex.printStackTrace();
