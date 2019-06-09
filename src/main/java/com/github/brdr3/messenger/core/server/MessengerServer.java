@@ -13,14 +13,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class MessengerServer {
 
     private final int port = 15672;
     private final Queue<Message> messageQueue;
-    private Map<Long, Message> messageHistory;
+    private Map<Object, Message> messageHistory;
     private final Gson gson = new Gson();
     private final Thread receiver;
     private final Thread sender;
@@ -64,14 +62,11 @@ public class MessengerServer {
         DatagramSocket socket;
         DatagramPacket dgPacket;
         byte buffer[] = new byte[10000];
-        User senderMessageUser;
-        Boolean senderEnable;
         MessageBuilder mb = new MessageBuilder();
 
         String jsonMessage;
         Message message;
         Message answer;
-        Tuple<User, Boolean> mapEntry;
 
         try {
             socket = new DatagramSocket(user.getPort());
@@ -83,11 +78,12 @@ public class MessengerServer {
                 socket.receive(dgPacket);
 
                 jsonMessage = new String(dgPacket.getData()).trim();
+                debugPrint("jsonMessage = " + jsonMessage);
                 message = gson.fromJson(jsonMessage, Message.class);
-
+                messageHistory.put("" + message.getId() + " " + message.getTo(), message);
                 syncronizedPrint("Message Received!");
                 debugPrint("Message: " + message);
-
+                
                 if (message.getContent().equals("/test")) {
                     debugPrint("Test Message!");
                     answer = mb.to(message.getFrom())
@@ -116,6 +112,7 @@ public class MessengerServer {
                     if (tupleNewUser == null) {
                         answer = mb.to(message.getFrom())
                                .from(user)
+                               .id(new Long(1))
                                .content("Could not find requested user.. "
                                        + "Is it on?")
                                .build();
@@ -125,10 +122,37 @@ public class MessengerServer {
                         String jsonAnswer = gson.toJson(newUser);
                         answer = mb.to(message.getFrom())
                                    .from(user)
+                                   .id(new Long(1))
                                    .content("requestedUser = " + jsonAnswer)
                                    .build();
                         debugPrint("Sended user to client " + message.getFrom());
                     }
+                } else if (message.getContent()
+                                  .trim()
+                                  .split(" ")
+                                  .length == 2
+                           && message.getContent()
+                                     .trim()
+                                     .split(" ")[0]
+                                     .equals("/getMessages")) {
+                    Long missingId = Long.parseLong(message.getContent()
+                                                           .trim()
+                                                           .split(" ")[1]);
+                    
+                    System.out.println("\n\n\n\n" + missingId);
+                    
+                    String messageFromUsername = message.getFrom().getUsername();
+                    
+                    System.out.println("\n\n\n\n" + messageFromUsername);
+
+                    messageHistory
+                           .values()
+                           .stream()
+                           .filter(m -> m.getTo().getUsername()
+                                         .equals(messageFromUsername))
+                           .filter(m -> m.getId() >= missingId)
+                           .forEach(m -> messageQueue.add(m));
+                    continue;
                 } else {
                     answer = message;
                     userConnection.put(message.getFrom().getUsername(), 

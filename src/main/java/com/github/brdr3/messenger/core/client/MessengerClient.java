@@ -2,14 +2,14 @@ package com.github.brdr3.messenger.core.client;
 
 import com.github.brdr3.messenger.core.util.Message;
 import com.github.brdr3.messenger.core.util.Message.MessageBuilder;
-import com.github.brdr3.messenger.core.util.Tuple;
 import com.github.brdr3.messenger.core.util.User;
 import com.google.gson.Gson;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 public class MessengerClient {
@@ -21,6 +21,8 @@ public class MessengerClient {
     private final Thread sender;
     private final Thread receiver;
     public boolean debug = false;
+    
+    Map<Message, String> history;
     
     public MessengerClient(String username, 
                            int port, 
@@ -52,6 +54,7 @@ public class MessengerClient {
         };
         
         to = this.server;
+        history = new HashMap<>();
     }
     
     public void run () {
@@ -62,7 +65,7 @@ public class MessengerClient {
     public void send() {
 
         String userMessage;
-        String content="";
+        String content = "";
         MessageBuilder mb = new MessageBuilder();
         
         try {
@@ -103,7 +106,12 @@ public class MessengerClient {
                     } else if(userMessage.equals("/test")) {
                         to = server;
                         content = userMessage;
-                    } else {
+                    } else if(userMessage.trim()
+                                         .split(" ")[0]
+                                         .equals("/getMessages")) {
+                        content = userMessage;
+                    }
+                    else {
                         System.out.println("Sorry, couldn't get the command.");
                         continue;
                     }
@@ -112,7 +120,7 @@ public class MessengerClient {
                     content = userMessage;
                 }
                 
-                sendMessage(mb.from(user).to(to).content(content).build());
+                sendMessage(content);
                 
                 if(content.equals("/exit")) {
                     syncronizedPrint("ByeBye!");
@@ -145,6 +153,8 @@ public class MessengerClient {
                 jsonMessage = new String(dgPacket.getData()).trim();
                 message = gson.fromJson(jsonMessage, Message.class);
                 
+                history.put(message, message.getFrom().getUsername());
+                
                 if(debug) {
                     debugPrint("Message Received: " + message);
                 }
@@ -161,9 +171,23 @@ public class MessengerClient {
                     debugPrint("Changed conversation: new User {" + to + "}");
                 }
                 
-                printTerminalIdentifier(message.getFrom());
-                syncronizedPrint(message.getContent(), true, false);
-                printTerminalIdentifier(user);
+                Long idMissing = missingMessageWithId(message);
+                
+                if(idMissing != null) {
+                    to = server;
+                    sendMessage("/getMessages " + idMissing);
+                    to = message.getTo();
+                } else {
+                    if (!message.getFrom().getUsername().equals("server")) {
+                        printTerminalIdentifier(message.getFrom());
+                        syncronizedPrint(message.getContent(), true, false);
+                        printTerminalIdentifier(user);
+                    } else {
+                        syncronizedPrint("", false, true);
+                        printTerminalIdentifier(user);
+                    }
+
+                }
                 
                 cleanBuffer(buffer);
             }
@@ -179,8 +203,29 @@ public class MessengerClient {
         }
     }
     
-    private void sendMessage(Message m) throws Exception {
-        String jsonMessage = new Gson().toJson(m);
+    private void sendMessage(String content) throws Exception {
+        
+        MessageBuilder mb = new MessageBuilder();
+        
+        Long id = history.keySet()
+                         .stream()
+                         .filter(m1 -> m1.getTo()
+                                         .getUsername()
+                                         .equals(to.getUsername()))
+                         .reduce((m1, m2) -> m1.getId() > m2.getId()? m1 : m2)
+                         .orElse(mb.id(new Long(0)).build()).getId() + 1;
+                
+        debugPrint("Message id: " + id);
+                
+        Message messageToSend = mb.id(id)
+                                  .from(user)
+                                  .to(to)
+                                  .content(content)
+                                  .build();
+        
+        history.put(messageToSend, to.getUsername());
+        
+        String jsonMessage = gson.toJson(messageToSend);
         byte buffer[] = new byte[10000];
         DatagramSocket socket;
         DatagramPacket packet;
@@ -208,8 +253,7 @@ public class MessengerClient {
              throws InterruptedException {
         synchronized(System.out) {
             if(cleanCurrentLine)
-                System.out.print("\r                          "
-                        + "                       \r");
+                System.out.print("\r                                                         \r");
                 System.out.print(s);
             if(newLine)
                 System.out.println();
@@ -221,9 +265,10 @@ public class MessengerClient {
     }
     
     private void printTerminalIdentifier(User u) throws Exception {
-        syncronizedPrint(u.toString(), false, false);
+        syncronizedPrint(u.toString(), false, true);
         
-        if (!to.getUsername().equals("server")) {
+        if (!to.getUsername().equals("server")
+            && u.getUsername().equals(user.getUsername())) {
             syncronizedPrint(" -> " + to + " > ", false, false);
         } else {
             syncronizedPrint(" > ", false, false);
@@ -238,5 +283,28 @@ public class MessengerClient {
         } catch (InterruptedException ex) {
             ex.printStackTrace();
         }
+    }
+
+    private Long missingMessageWithId(Message message) throws InterruptedException {
+        if (message.getFrom().getUsername().equals("server"))
+            return null;
+        
+        for(long i = 0; i < message.getId(); i += 1) {
+            Long ii = new Long(i+1);
+            
+            if(history.keySet()
+                      .stream()
+                      .filter(m1 -> m1.getFrom()
+                                      .getUsername()
+                                      .equals(to.getUsername()))
+                      .map(m1 -> m1.getId())
+                      .parallel()
+                      .filter(v -> v.equals(ii))
+                      .count() <= 0) {
+                syncronizedPrint("Requesting messages with id greater than " + ii);
+                return ii;
+            }
+        }
+        return null;
     }
 }
