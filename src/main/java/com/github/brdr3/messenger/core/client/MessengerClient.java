@@ -108,7 +108,7 @@ public class MessengerClient {
                         content = userMessage;
                     } else if(userMessage.trim()
                                          .split(" ")[0]
-                                         .equals("/getMessages")) {
+                                         .equals("/getMessage")) {
                         content = userMessage;
                     }
                     else {
@@ -171,24 +171,18 @@ public class MessengerClient {
                     debugPrint("Changed conversation: new User {" + to + "}");
                 }
                 
-                Long idMissing = missingMessageWithId(message);
+                getMissingMessagesBeforeMessage(message);
                 
-                if(idMissing != null) {
-                    to = server;
-                    sendMessage("/getMessages " + idMissing);
-                    to = message.getTo();
-                } else {
-                    if (!message.getFrom().getUsername().equals("server")) {
-                        printTerminalIdentifier(message.getFrom());
-                        syncronizedPrint(message.getContent(), true, false);
-                        printTerminalIdentifier(user);
-                    } else {
-                        syncronizedPrint("", false, true);
-                        printTerminalIdentifier(user);
-                    }
 
+                if (!message.getFrom().getUsername().equals("server")) {
+                    printTerminalIdentifier(message.getFrom());
+                    syncronizedPrint(message.getContent(), true, false);
+                    printTerminalIdentifier(user);
+                } else {
+                    syncronizedPrint("", false, true);
+                    printTerminalIdentifier(user);
                 }
-                
+
                 cleanBuffer(buffer);
             }
         }
@@ -285,9 +279,9 @@ public class MessengerClient {
         }
     }
 
-    private Long missingMessageWithId(Message message) throws InterruptedException {
+    private void getMissingMessagesBeforeMessage(Message message) throws Exception {
         if (message.getFrom().getUsername().equals("server"))
-            return null;
+            return;
         
         for(long i = 0; i < message.getId(); i += 1) {
             Long ii = new Long(i+1);
@@ -301,10 +295,11 @@ public class MessengerClient {
                       .parallel()
                       .filter(v -> v.equals(ii))
                       .count() <= 0) {
-                syncronizedPrint("Requesting messages with id greater than " + ii);
-                return ii;
+                System.out.println("had entered!");
+                to = server;
+                sendMessage("/getMessage " + ii);
+                to = message.getTo();
             }
         }
-        return null;
     }
 }

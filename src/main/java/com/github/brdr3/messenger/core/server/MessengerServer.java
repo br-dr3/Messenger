@@ -5,6 +5,7 @@ import com.github.brdr3.messenger.core.util.Message.MessageBuilder;
 import com.github.brdr3.messenger.core.util.Tuple;
 import com.github.brdr3.messenger.core.util.User;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -79,7 +80,13 @@ public class MessengerServer {
 
                 jsonMessage = new String(dgPacket.getData()).trim();
                 debugPrint("jsonMessage = " + jsonMessage);
-                message = gson.fromJson(jsonMessage, Message.class);
+                
+                try {
+                    message = gson.fromJson(jsonMessage, Message.class);
+                } catch(JsonSyntaxException e) {
+                    syncronizedPrint("Message is not valid.");
+                    continue;
+                }
                 messageHistory.put("" + message.getId() + " " + message.getTo(), message);
                 syncronizedPrint("Message Received!");
                 debugPrint("Message: " + message);
@@ -88,6 +95,7 @@ public class MessengerServer {
                     debugPrint("Test Message!");
                     answer = mb.to(message.getFrom())
                             .from(user)
+                            .id(new Long(1))
                             .content("Test successfull!")
                             .build();
                     userConnection.put(message.getFrom().getUsername(), 
@@ -134,23 +142,19 @@ public class MessengerServer {
                            && message.getContent()
                                      .trim()
                                      .split(" ")[0]
-                                     .equals("/getMessages")) {
+                                     .equals("/getMessage")) {
                     Long missingId = Long.parseLong(message.getContent()
                                                            .trim()
                                                            .split(" ")[1]);
                     
-                    System.out.println("\n\n\n\n" + missingId);
-                    
                     String messageFromUsername = message.getFrom().getUsername();
-                    
-                    System.out.println("\n\n\n\n" + messageFromUsername);
 
                     messageHistory
                            .values()
                            .stream()
                            .filter(m -> m.getTo().getUsername()
                                          .equals(messageFromUsername))
-                           .filter(m -> m.getId() >= missingId)
+                           .filter(m -> m.getId().equals(missingId))
                            .forEach(m -> messageQueue.add(m));
                     continue;
                 } else {
