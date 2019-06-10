@@ -108,7 +108,7 @@ public class MessengerClient {
                         content = userMessage;
                     } else if(userMessage.trim()
                                          .split(" ")[0]
-                                         .equals("/getMessages")) {
+                                         .equals("/getMessage")) {
                         content = userMessage;
                     }
                     else {
@@ -171,24 +171,17 @@ public class MessengerClient {
                     debugPrint("Changed conversation: new User {" + to + "}");
                 }
                 
-                Long idMissing = missingMessageWithId(message);
-                
-                if(idMissing != null) {
-                    to = server;
-                    sendMessage("/getMessages " + idMissing);
-                    to = message.getTo();
-                } else {
-                    if (!message.getFrom().getUsername().equals("server")) {
-                        printTerminalIdentifier(message.getFrom());
-                        syncronizedPrint(message.getContent(), true, false);
-                        printTerminalIdentifier(user);
-                    } else {
-                        syncronizedPrint("", false, true);
-                        printTerminalIdentifier(user);
-                    }
+                getMissingMessagesBeforeMessage(message);
 
+                if (!message.getFrom().getUsername().equals("server")) {
+                    printTerminalIdentifier(message.getFrom());
+                    syncronizedPrint(message.getContent(), true, false);
+                    printTerminalIdentifier(user);
+                } else {
+                    syncronizedPrint("", false, true);
+                    printTerminalIdentifier(user);
                 }
-                
+
                 cleanBuffer(buffer);
             }
         }
@@ -223,7 +216,7 @@ public class MessengerClient {
                                   .content(content)
                                   .build();
         
-        history.put(messageToSend, to.getUsername());
+        history.put(messageToSend, messageToSend.getFrom().getUsername());
         
         String jsonMessage = gson.toJson(messageToSend);
         byte buffer[] = new byte[10000];
@@ -285,26 +278,24 @@ public class MessengerClient {
         }
     }
 
-    private Long missingMessageWithId(Message message) throws InterruptedException {
+    private void getMissingMessagesBeforeMessage(Message message) throws Exception {
         if (message.getFrom().getUsername().equals("server"))
-            return null;
+            return;
         
-        for(long i = 0; i < message.getId(); i += 1) {
-            Long ii = new Long(i+1);
+        for(long i = 1; i <= message.getId(); i += 1) {
+            Long ii = new Long(i);
             
-            if(history.keySet()
-                      .stream()
-                      .filter(m1 -> m1.getFrom()
-                                      .getUsername()
-                                      .equals(to.getUsername()))
-                      .map(m1 -> m1.getId())
-                      .parallel()
-                      .filter(v -> v.equals(ii))
-                      .count() <= 0) {
-                syncronizedPrint("Requesting messages with id greater than " + ii);
-                return ii;
-            }
+            debugPrint("history = " + history);
+            
+            history.keySet()
+                   .stream()
+                   .filter(m1 -> m1.getFrom()
+                                   .getUsername()
+                                   .equals(to.getUsername()))
+                   .map(m1 -> m1.getId())
+                   .parallel()
+                   .filter(v -> v.equals(ii))   
+                   .forEach(a -> debugPrint(a + ""));
         }
-        return null;
     }
 }

@@ -13,6 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class MessengerServer {
 
@@ -80,7 +82,11 @@ public class MessengerServer {
                 jsonMessage = new String(dgPacket.getData()).trim();
                 debugPrint("jsonMessage = " + jsonMessage);
                 message = gson.fromJson(jsonMessage, Message.class);
-                messageHistory.put("" + message.getId() + " " + message.getTo(), message);
+                
+                if(!message.getContent().contains("/getMessage")) {
+                    messageHistory.put(message.getId() + " " + message.getTo(), message);
+                }
+                
                 syncronizedPrint("Message Received!");
                 debugPrint("Message: " + message);
                 
@@ -134,24 +140,23 @@ public class MessengerServer {
                            && message.getContent()
                                      .trim()
                                      .split(" ")[0]
-                                     .equals("/getMessages")) {
+                                     .equals("/getMessage")) {
                     Long missingId = Long.parseLong(message.getContent()
                                                            .trim()
                                                            .split(" ")[1]);
                     
-                    System.out.println("\n\n\n\n" + missingId);
-                    
                     String messageFromUsername = message.getFrom().getUsername();
                     
-                    System.out.println("\n\n\n\n" + messageFromUsername);
-
+                    Message resendMessage = 
                     messageHistory
                            .values()
                            .stream()
                            .filter(m -> m.getTo().getUsername()
-                                         .equals(messageFromUsername))
-                           .filter(m -> m.getId() >= missingId)
-                           .forEach(m -> messageQueue.add(m));
+                                         .equals(messageFromUsername)
+                                     && m.getId() == missingId)
+                           .findFirst().get();
+                    
+                    messageQueue.add(resendMessage);
                     continue;
                 } else {
                     answer = message;
@@ -194,6 +199,9 @@ public class MessengerServer {
                     socket.close();
 
                     syncronizedPrint("Message sended to client! ");
+//                    debugPrint("Thread sleeping for 2 seconds");
+//                    Thread.currentThread().sleep(2000);
+//                    debugPrint("Thread wake up!");
                     debugPrint(m.toString());
                     messageHistory.put(m.getId(), m);
 
