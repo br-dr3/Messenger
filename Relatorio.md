@@ -72,20 +72,17 @@ java -Dserver=true -jar Messenger.jar
 
 - Client
 ```
-java -Dusername=<username>
--DclientPort=<clientPort>
--DserverHostname=<serverHostname>
--DserverPort=<serverPort> -jar Messenger.java
+java -Dusername=<username> -DclientPort=<clientPort> -DserverHostname=<serverHostname> -DserverPort=<serverPort> -jar Messenger.java
 ```
 
     onde:  
-     <username\> = nome do usuario  
-     <clientPort\> = porta que a requisição chega para o cliente  
-     <serverHostname\> = nome do Host (localhost para execução na mesma máquina)  
-     <serverPort\> = porta que a requisição chega para o servidor
+     <username> = nome do usuario  
+     <clientPort> = porta que a requisição chega para o cliente  
+     <serverHostname> = nome do Host (localhost para execução na mesma máquina)  
+     <serverPort> = porta que a requisição chega para o servidor
 
 Ao executar, o cliente estará conversando com o servidor. Mande uma mensagem para o servidor entender que você está conectado.
 
-Use o comando /username <username\> para se comunicar com o cliente com nome "username"
+Use o comando /username <username> para se comunicar com o cliente com nome "username"
 
-Use o comando /getMessage <id/> para receber novamente a mensagem com id = "id".
+Use o comando /getMessage <id> para receber novamente a mensagem com id = "id".
