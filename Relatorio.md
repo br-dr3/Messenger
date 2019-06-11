@@ -51,7 +51,7 @@ Uma mensagem duplicada teria um id duplicado também, pois é possível que o us
 ## 6. Consumo do Buffer e Tratamento de mensagens perdidas
 O servidor, ao receber uma mensagem, coloca na fila global de mensagens para serem enviadas. Dentro dela, já é possível coletar informações de endereço do cliente. Para efeito de facilidade, o cliente sempre ouve na mesma porta, enquanto manda por alguma porta aleatória definida pela própria instanciação da classe DatagramPacket. Tomou-se o cuidado de que essa fila fosse concorrente, para que evitasse erro de consumo e postagem no buffer.
 
-Quando se perde uma mensagem, também se perde um id. Caso esse id seja menor que o máximo recebido, basta usar o comando descrito em **4** (**/getMessage /<id/>**) que o servidor iria reenviar. No caso da mensagem que não foi enviada ser a de id máximo, o cliente não a conhece enquanto o servidor não envia uma com id mais alto que a que deveria vir.
+Quando se perde uma mensagem, também se perde um id. Caso esse id seja menor que o máximo recebido, basta usar o comando descrito em **4** (**/getMessage \<id\>**) que o servidor iria reenviar. No caso da mensagem que não foi enviada ser a de id máximo, o cliente não a conhece enquanto o servidor não envia uma com id mais alto que a que deveria vir.
 
 Por falta de **tempo**, não se implementou a política de _timeout_.
 
