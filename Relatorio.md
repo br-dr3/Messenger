@@ -72,7 +72,8 @@ java -Dserver=true -jar Messenger.jar
 
 - Client
 ```
-java -Dusername=<username> -DclientPort=<clientPort> -DserverHostname=<serverHostname> -DserverPort=<serverPort> -jar Messenger.java
+java -Dusername=<username> -DclientPort=<clientPort> -DserverHostname=<serverHostname> -DserverPort=<serverPort> 
+-jar Messenger.java
 ```
 
     onde:  
