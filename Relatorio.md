@@ -86,4 +86,4 @@ Ao executar, o cliente estará conversando com o servidor. Mande uma mensagem pa
 
 Use o comando /username <username> para se comunicar com o cliente com nome "username"
 
-Use o comando /getMessage <id> para receber novamente a mensagem com id = "id".
+Use o comando /getMessage \<id\> para receber novamente a mensagem com id = "id".
