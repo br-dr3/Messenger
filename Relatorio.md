@@ -9,11 +9,11 @@ Este relatório pretende elucidar o sistema desenvolvido como solução para o p
 ## 2. Requisitos
 A seguir, demonstra-se os requisitos do projeto e se o desenvolvedor os alcançou.
 
-O cliente deveria: 
+O cliente deveria:
 - [x] Enviar mensagens ordenadas sequencialmente;
 - [x] Enviar mensagens fora de ordem;
 - [x] Simular o envio de mensagens perdidas;
-- [ ] Enviar mensagens duplicadas. 
+- [ ] Enviar mensagens duplicadas.
 
 O servidor deveria:
 - [x] Receber simultaneamente mensagens dos clientes;
@@ -27,7 +27,7 @@ A seguir, uma tabela dos atributos da classe mensagem, seguidas de uma breve exp
 
 |  Atributo  | Tipo   |  Explicação |
 |:----------:|--------|:------------|
-| id         | **Long**\*  | Guarda o id da mensagem. (único em relação a conversa) | 
+| id         | **Long**\*  | Guarda o id da mensagem. (único em relação a conversa) |
 | content    | String | O conteúdo referente a mensagem (não há distinção entre <br>mensagem de cliente e servidor no conteúdo)|
 | to         | **User**\* |  Usuário que receberá a mensagem |
 | from       | **User**\* |  Usuário que enviou a mensagem |
@@ -37,13 +37,13 @@ A seguir, uma tabela dos atributos da classe mensagem, seguidas de uma breve exp
 
 ---
 ## 4. Tratamento de mensagens fora de ordem
-Caso o cliente perceba que chegou mensagem fora de ordem, este pede que o servidor as reenvie (que por sua vez pede para o cliente as reenviar caso não as tenha). Isto ocorre por meio do comando **"/getMessage \<id\>"**, que o próprio usuário pode pedir caso deseje. 
+Caso o cliente perceba que chegou mensagem fora de ordem, este pede que o servidor as reenvie (que por sua vez pede para o cliente as reenviar caso não as tenha). Isto ocorre por meio do comando **"/getMessage \<id\>"**, que o próprio usuário pode pedir caso deseje.
 
 Quando o servidor recebe, ele trata de buscar em seu histórico de mensagens recebidas aquele id faltante. É percebido a falta de mensagens quando é pulado um certo id para uma conversa (por isso a necessidade de modelar o id da mensagem entendendo que ele é único por conversa).
 
 ---
 ## 5. Tratamento de mensagens duplicadas
-Entendendo que não foi implementado este requisito por falta de **tempo**, foi reservado o direito de propor uma possível solução para o problema de mensagens duplicadas. 
+Entendendo que não foi implementado este requisito por falta de **tempo**, foi reservado o direito de propor uma possível solução para o problema de mensagens duplicadas.
 
 Uma mensagem duplicada teria um id duplicado também, pois é possível que o usuário envie duas vezes o mesmo conteúdo, caso seja do desejo dele. Logo, uma mensagem que chegasse e já estivesse com aquele id no mapa de histórico, seria rejeitada.
 
@@ -61,3 +61,31 @@ Como ja explicitado em outras seções, o projeto tomou tempo demasiado do estud
 
 Fora isso, foi possível entender algumas dificuldades de envio de mensagens UDP, implementar soluções de problemas recorrentes para sistemas que em tese seriam distribuídos, e etc.
 
+---
+
+## 8. Manual de utilização
+Executar o arquivo Messenger.jar seguindo o parâmetro.
+- Server:
+```
+java -Dserver=true -jar Messenger.jar
+```
+
+- Client
+```
+java -Dusername=<username>
+-DclientPort=<clientPort>
+-DserverHostname=<serverHostname>
+-DserverPort=<serverPort> -jar Messenger.java
+```
+
+    onde:  
+     <username\> = nome do usuario  
+     <clientPort\> = porta que a requisição chega para o cliente  
+     <serverHostname\> = nome do Host (localhost para execução na mesma máquina)  
+     <serverPort\> = porta que a requisição chega para o servidor
+
+Ao executar, o cliente estará conversando com o servidor. Mande uma mensagem para o servidor entender que você está conectado.
+
+Use o comando /username <username\> para se comunicar com o cliente com nome "username"
+
+Use o comando /getMessage <id/> para receber novamente a mensagem com id = "id".
