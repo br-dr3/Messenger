@@ -73,6 +73,7 @@ public class MessengerServer {
         try {
             socket = new DatagramSocket(user.getPort());
             while (true) {
+                cleanBuffer(buffer);
                 answer = null;
                 dgPacket = new DatagramPacket(buffer, buffer.length,
                         user.getAddress(),
@@ -174,7 +175,6 @@ public class MessengerServer {
                     && !answer.getTo().getUsername().equals("server")) {
                     messageQueue.add(answer);
                 }
-                cleanBuffer(buffer);
             }
         } catch (Exception e) {
             e.printStackTrace();

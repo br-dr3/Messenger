@@ -69,7 +69,6 @@ public class MessengerClient {
         MessageBuilder mb = new MessageBuilder();
         
         try {
-            byte buffer[] = new byte [10000];
             
             while(true) {
                 userMessage = null;
