@@ -154,7 +154,12 @@ public class MessengerServer {
                            .filter(m -> m.getTo().getUsername()
                                          .equals(messageFromUsername)
                                      && m.getId() == missingId)
-                           .findFirst().get();
+                           .findFirst()
+                           .orElse(mb.content("Message doesn't exist")
+                                     .id(new Long(1))
+                                     .from(user)
+                                     .to(message.getTo())
+                                     .build());
                     
                     messageQueue.add(resendMessage);
                     continue;
